@@ -2,7 +2,7 @@ package com.gvolpe.fsmstreams.analytics
 
 import cats.kernel.laws.discipline.SemigroupTests
 import munit.DisciplineSuite
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.{ Arbitrary, Gen }
 
 class TickSuite extends DisciplineSuite {
 

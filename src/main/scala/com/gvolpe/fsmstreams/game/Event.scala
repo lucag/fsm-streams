@@ -1,61 +1,62 @@
 package com.gvolpe.fsmstreams.game
 
-import scala.concurrent.duration._
-
+import scala.concurrent.duration.*
 import cats.Monoid
-import monocle.Fold
-import monocle.macros._
+import monocle.{ Fold, Prism }
+import monocle.macros.*
+import com.gvolpe.fsmstreams.game.types.*
 
-sealed trait Event {
+enum Event:
   def createdAt: Timestamp
-}
 
-object Event {
-  case class LevelUp(
-      playerId: PlayerId,
-      newLevel: Level,
+  case LevelUp(
+      playerId:  PlayerId,
+      newLevel:  Level,
       createdAt: Timestamp
-  ) extends Event
+  )
 
-  case class PuzzleSolved(
-      playerId: PlayerId,
+  case PuzzleSolved(
+      playerId:   PlayerId,
       puzzleName: PuzzleName,
-      duration: FiniteDuration,
+      duration:   FiniteDuration,
+      createdAt:  Timestamp
+  )
+
+  case GemCollected(
+      playerId:  PlayerId,
+      gemType:   GemType,
       createdAt: Timestamp
-  ) extends Event
+  )
 
-  case class GemCollected(
-      playerId: PlayerId,
-      gemType: GemType,
-      createdAt: Timestamp
-  ) extends Event
+object Event:
+  val gemCollected: Prism[Event, GemCollected] = GenPrism[Event, GemCollected]
+  val levelUp: Prism[Event, LevelUp]           = GenPrism[Event, LevelUp]
+  val puzzleSolved: Prism[Event, PuzzleSolved] = GenPrism[Event, PuzzleSolved]
 
-  val __GemCollected = GenPrism[Event, GemCollected]
-  val __LevelUp      = GenPrism[Event, LevelUp]
-  val __PuzzleSolved = GenPrism[Event, PuzzleSolved]
+  val playerId: Fold[Event, PlayerId] =
+    new Fold[Event, PlayerId]:
+      def foldMap[M : Monoid](f: PlayerId => M)(s: Event): M =
+        s match
+          case LevelUp(pid, _, _)         => f(pid)
+          case PuzzleSolved(pid, _, _, _) => f(pid)
+          case GemCollected(pid, _, _)    => f(pid)
 
-  val _PlayerId: Fold[Event, PlayerId] =
-    new Fold[Event, PlayerId] {
-      def foldMap[M: Monoid](f: PlayerId => M)(s: Event): M =
-        s match {
-          case Event.LevelUp(pid, _, _)         => f(pid)
-          case Event.PuzzleSolved(pid, _, _, _) => f(pid)
-          case Event.GemCollected(pid, _, _)    => f(pid)
-          case _                                => M.empty
-        }
-    }
+  import cats.*
+  import cats.syntax.all.*
 
-  val _LevelUp_Last_Level_Sum: Fold[List[Event], Int] =
-    new Fold[List[Event], Int] {
-      def foldMap[M: Monoid](f: Int => M)(s: List[Event]): M =
+  val lastLevelSum: Fold[List[Event], Level] =
+    new Fold[List[Event], Level] {
+      def foldMap[M : Monoid](f: Level => M)(s: List[Event]): M =
         f {
-          s.flatMap(__LevelUp.getOption(_).toList)
-            .groupBy[PlayerId](_.playerId)
-            .map {
-              case (_, xs) => xs.map(_.newLevel.value).takeRight(1).headOption.getOrElse(0)
-            }
-            .sum
+          s.flatMap(levelUp.getOption(_).toList)
+            .groupBy(_.playerId)
+            .map: (_, xs) =>
+              xs.map(_.newLevel)
+                .takeRight(1)
+                .headOption
+                .getOrElse(Level(0))
+            .fold(Level(0))(_ combine _)
         }
     }
 
-}
+end Event

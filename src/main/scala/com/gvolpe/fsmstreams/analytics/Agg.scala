@@ -1,14 +1,11 @@
 package com.gvolpe.fsmstreams.analytics
 
-import com.gvolpe.fsmstreams.game._
+import com.gvolpe.fsmstreams.game.*
+import com.gvolpe.fsmstreams.game.types.*
 
-import monocle.macros._
+import monocle.macros.*
 
-case class Agg(
-    level: Level,
-    points: Points,
-    gems: Map[GemType, Int]
-) {
+case class Agg(level: Level, points: Points, gems: Map[GemType, Int]) {
   def summary(pid: PlayerId, ts: Timestamp): Summary =
     Summary(pid, level, points, gems, ts)
 }
@@ -16,15 +13,15 @@ case class Agg(
 object Agg {
   def empty = Agg(Level(0), Points(0), Map.empty)
 
-  val _Gems   = GenLens[Agg](_.gems)
-  val _Level  = GenLens[Agg](_.level)
-  val _Points = GenLens[Agg](_.points)
+  val gems   = GenLens[Agg](_.gems)
+  val level  = GenLens[Agg](_.level)
+  val points = GenLens[Agg](_.points)
 }
 
 case class Summary(
-    playerId: PlayerId,
-    level: Level,
-    points: Points,
-    gems: Map[GemType, Int],
+    playerId:  PlayerId,
+    level:     Level,
+    points:    Points,
+    gems:      Map[GemType, Int],
     createdAt: Timestamp
 )

@@ -1,14 +1,16 @@
 package com.gvolpe.fsmstreams
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 import java.util.UUID
 
-import com.gvolpe.fsmstreams.analytics._
-import com.gvolpe.fsmstreams.game._
+import com.gvolpe.fsmstreams.analytics.*
+import com.gvolpe.fsmstreams.game.types.*
+import com.gvolpe.fsmstreams.game.Event
+import com.gvolpe.fsmstreams.game.GemType
 
-import cats.effect._
-import cats.syntax.all._
+import cats.effect.*
+import cats.syntax.all.*
 import fs2.Stream
 
 object Main extends IOApp {
@@ -18,7 +20,11 @@ object Main extends IOApp {
 
   val program =
     Stream
-      .eval((Time[IO].timestamp, IO(PlayerId(UUID.randomUUID())), Ticker.create[IO](500, 2.seconds)).tupled)
+      .eval((
+        Time[IO].timestamp,
+        IO(PlayerId(UUID.randomUUID())),
+        Ticker.create[IO](500, 2.seconds)
+      ).tupled)
       .flatMap {
         case (ts, pid, ticker) =>
           Engine(s => IO(println(s)), ticker).run {
