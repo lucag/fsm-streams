@@ -1,11 +1,17 @@
-import Dependencies._
-import com.scalapenos.sbt.prompt.SbtPrompt.autoImport._
-import com.scalapenos.sbt.prompt._
-import com.typesafe.sbt.packager.docker._
+import com.scalapenos.sbt.prompt.SbtPrompt.autoImport.*
+import com.scalapenos.sbt.prompt.*
+import com.typesafe.sbt.packager.docker.*
 
-ThisBuild / scalaVersion := "2.13.4"
-ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / organization := "com.gvolpe"
+import Dependencies.*
+
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
+ThisBuild / scalaVersion   := "3.7.1"
+ThisBuild / version        := "0.1.0-SNAPSHOT"
+ThisBuild / organization   := "com.gvolpe"
+ThisBuild / scalacOptions ++= Seq("-new-syntax", "-rewrite")
+
+// Compile / run / fork := true
 
 promptTheme := PromptTheme(
   List(
@@ -15,7 +21,7 @@ promptTheme := PromptTheme(
 )
 
 val nixDockerSettings = List(
-  name := "sbt-nix-fsm-streams",
+  name           := "sbt-nix-fsm-streams",
   dockerCommands := Seq(
     Cmd("FROM", "base-jre:latest"),
     Cmd("COPY", "1/opt/docker/lib/*.jar", "/lib/"),
@@ -28,22 +34,26 @@ lazy val root = (project in file("."))
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(DockerPlugin)
   .settings(
-    licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
-    scalacOptions += "-Ymacro-annotations",
+    name := "fsm-streams",
+    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
+    // scalacOptions            += "-Ymacro-annotations",
     testFrameworks += new TestFramework("munit.Framework"),
-    parallelExecution in Test := false,
+    Test / parallelExecution := false,
+    Compile / run / fork := true,
     libraryDependencies ++= Seq(
-      CompilerPlugins.betterMonadicFor,
-      CompilerPlugins.contextApplied,
-      CompilerPlugins.kindProjector,
       fs2Core,
       monocleCore,
       monocleMacro,
-      newtype,
-      catsLaws        % Test,
+      kittens,
+      scalacheckEffect,
+      catsLaws % Test,
       disciplineMunit % Test,
-      munitCore       % Test,
-      munitScalaCheck % Test
+      munitCore % Test,
+      munitScalaCheck % Test,
+      munitCatsEffect % Test,
+      scalaCheck % Test,
+      scalacheckEffectMunit % Test,
+      catsEffecTestkit % Test
     )
   )
-  .settings(nixDockerSettings: _*)
+  .settings(nixDockerSettings *)
